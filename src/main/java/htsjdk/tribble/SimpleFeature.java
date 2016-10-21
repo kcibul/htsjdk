@@ -39,19 +39,23 @@ public class SimpleFeature implements Feature {
         this.end = end;
     }
 
+    @Override
     @Deprecated
     public String getChr() {
         return contig;
     }
 
+    @Override
     public String getContig() {
         return contig;
     }
 
+    @Override
     public int getStart() {
         return start;
     }
 
+    @Override
     public int getEnd() {
         return end;
     }

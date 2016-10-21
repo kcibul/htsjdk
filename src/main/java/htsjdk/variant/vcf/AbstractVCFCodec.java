@@ -254,6 +254,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param line the line
      * @return a VariantContext
      */
+    @Override
     public VariantContext decode(String line) {
         return decodeLine(line, true);
     }
@@ -364,6 +365,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * get the name of this codec
      * @return our set name
      */
+    @Override
     public String getName() {
         return name;
     }
@@ -372,6 +374,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * set the name of this codec
      * @param name new name
      */
+    @Override
     public void setName(String name) {
         this.name = name;
     }

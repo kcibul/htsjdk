@@ -395,6 +395,7 @@ public class SamPairUtil {
          */
         public long getNumMateCigarsAdded() { return this.numMateCigarsAdded; }
 
+        @Override
         public boolean hasNext() {
             return (!records.isEmpty() || super.hasNext());
         }
@@ -466,12 +467,14 @@ public class SamPairUtil {
             }
         }
 
+        @Override
         public SAMRecord next() {
             advance();
             if (records.isEmpty()) throw new IllegalStateException("Unexpectedly found an empty record list");
             return this.records.poll();
         }
 
+        @Override
         public SAMRecord peek() {
             advance();
             if (records.isEmpty()) throw new IllegalStateException("Unexpectedly found an empty record list");

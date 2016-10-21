@@ -19,17 +19,19 @@ import java.io.OutputStream;
 
 public final class LittleEndianOutputStream extends FilterOutputStream {
 
-    protected long written;
+    private long written;
 
     public LittleEndianOutputStream(OutputStream out) {
         super(out);
     }
 
+    @Override
     public void write(int b) throws IOException {
         out.write(b);
         written++;
     }
 
+    @Override
     public void write(byte[] data, int offset, int length)
             throws IOException {
         out.write(data, offset, length);
@@ -99,10 +101,7 @@ public final class LittleEndianOutputStream extends FilterOutputStream {
     }
 
     /**
-     * Srite a string as a null terminated byte array.
-     *
-     * @param s
-     * @throws IOException
+     * Write a string as a null terminated byte array.
      */
     public void writeString(String s) throws IOException {
         writeBytes(s);
@@ -113,8 +112,8 @@ public final class LittleEndianOutputStream extends FilterOutputStream {
         return written;
     }
 
-    // Method provide to enable "reseting" to a previous state.
+    /** Method provide to enable "resetting" to a previous state*/
     public void setWrittenCount(long count) {
         this.written = count;
     }
-}// end LittleEndianOutputStream
+}

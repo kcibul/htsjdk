@@ -102,9 +102,11 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             insertedInRecord.add(new RecordAndOffset(read, firstPosition));
         }
 
+        @Override
         public int getSequenceIndex() { return referenceSequence.getSequenceIndex(); }
 
         /** @return 1-based reference position */
+        @Override
         public int getPosition() { return position; }
         public List<RecordAndOffset> getRecordAndPositions() { return Collections.unmodifiableList(recordAndOffsets); }
         public String getSequenceName() { return referenceSequence.getSequenceName(); }
@@ -247,6 +249,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         }
     }
 
+    @Override
     public Iterator<LocusInfo> iterator() {
         if (samIterator != null) {
             throw new IllegalStateException("Cannot call iterator() more than once on SamLocusIterator");
@@ -264,6 +267,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         return this;
     }
 
+    @Override
     public void close() {
         this.samIterator.close();
     }
@@ -278,6 +282,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      *   2) there are LocusInfos in some stage of accumulation
      *   3) there are loci in the target mask that have yet to be accumulated (even if there are no reads covering them)
      */
+    @Override
     public boolean hasNext() {
         if (this.samIterator == null) {
             iterator();
@@ -313,6 +318,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     /**
      * hasNext() has been fixed so that if it returns true, next() is now guaranteed not to return null.
      */
+    @Override
     public LocusInfo next() {
 
         // if we don't have any completed entries to return, try and make some!
@@ -606,6 +612,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         return samReader.getFileHeader().getSequence(referenceSequenceIndex);
     }
 
+    @Override
     public void remove() {
         throw new UnsupportedOperationException("Can not remove records from a SAM file via an iterator!");
     }

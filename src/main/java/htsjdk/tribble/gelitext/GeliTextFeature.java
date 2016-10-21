@@ -84,6 +84,7 @@ public class GeliTextFeature implements Feature {
     }
 
     /** Return the features reference sequence name, e.g chromosome or contig */
+    @Override
     @Deprecated
     public String getChr() {
         return getContig();
@@ -95,6 +96,7 @@ public class GeliTextFeature implements Feature {
     }
 
     /** Return the start position in 1-based coordinates (first base is 1) */
+    @Override
     public int getStart() {
         return (int) this.position;
     }
@@ -103,6 +105,7 @@ public class GeliTextFeature implements Feature {
      * Return the end position following 1-based fully closed conventions.  The length of a feature is
      * end - start + 1;
      */
+    @Override
     public int getEnd() {
         return (int) this.position;
     }

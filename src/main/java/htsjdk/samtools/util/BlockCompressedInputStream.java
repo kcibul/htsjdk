@@ -127,6 +127,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * Note that although the next caller can read this many bytes without blocking, the available() method call itself
      * may block in order to fill an internal buffer if it has been exhausted.
      */
+    @Override
     public int available() throws IOException {
         if (mCurrentBlock == null || mCurrentOffset == mCurrentBlock.length) {
             readBlock();
@@ -148,6 +149,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     /**
      * Closes the underlying InputStream or RandomAccessFile
      */
+    @Override
     public void close() throws IOException {
         if (mFile != null) {
             mFile.close();
@@ -168,6 +170,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
 
      * @return the next byte of data, or -1 if the end of the stream is reached.
      */
+    @Override
     public int read() throws IOException {
         return (available() > 0) ? (mCurrentBlock[mCurrentOffset++] & 0xFF) : -1;
     }
@@ -183,6 +186,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @return the total number of bytes read into the buffer, or -1 is there is no more data because the end of
      * the stream has been reached.
      */
+    @Override
     public int read(final byte[] buffer) throws IOException {
         return read(buffer, 0, buffer.length);
     }
@@ -255,6 +259,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @return the total number of bytes read into the buffer, or -1 if there is no more data because the end of
      * the stream has been reached.
      */
+    @Override
     public int read(final byte[] buffer, int offset, int length) throws IOException {
         final int originalLength = length;
         while (length > 0) {
