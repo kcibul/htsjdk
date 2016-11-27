@@ -1233,7 +1233,21 @@ public class VariantContext implements Feature, Serializable {
             throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getContig(), getStart()));
     }
 
+    private void validateNumberOfItems(final String attributeKey, final int observedSize ) {
+        if ( hasAttribute(attributeKey) && observedSize > 0) {
+            Object object = getAttribute(attributeKey);
+            int reportedSize = (object instanceof List ) ? ((List) object).size() : 1;
+            if (reportedSize != observedSize) {
+                throw new TribbleException.InternalCodecException(String.format("the %s tag has the incorrect number of records at position %s:%d, %d vs. %d", attributeKey, getContig(), getStart(), reportedSize, observedSize));
+            }
+        }
+    }
+
     public void validateChromosomeCounts() {
+        final int numberOfAlternateAlleles = alleles.size() - 1;
+        validateNumberOfItems(VCFConstants.ALLELE_COUNT_KEY, numberOfAlternateAlleles);
+        validateNumberOfItems(VCFConstants.ALLELE_FREQUENCY_KEY, numberOfAlternateAlleles);
+
         if ( !hasGenotypes() )
             return;
 
@@ -1247,7 +1261,7 @@ public class VariantContext implements Feature, Serializable {
 
         // AC
         if ( hasAttribute(VCFConstants.ALLELE_COUNT_KEY) ) {
-            ArrayList<Integer> observedACs = new ArrayList<Integer>();
+            ArrayList<Integer> observedACs = new ArrayList<>();
 
             // if there are alternate alleles, record the relevant tags
             if (!getAlternateAlleles().isEmpty()) {
