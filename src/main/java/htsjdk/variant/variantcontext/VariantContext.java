@@ -263,7 +263,7 @@ public class VariantContext implements Feature, Serializable {
 * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
 */
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
-        final Set<String> keys = new HashSet<String>();
+        final Set<String> keys = new HashSet<>();
 
         boolean sawGoodGT = false;
         boolean sawGoodQual = false;
@@ -287,11 +287,11 @@ public class VariantContext implements Feature, Serializable {
         if ( sawPL ) keys.add(VCFConstants.GENOTYPE_PL_KEY);
         if ( sawGenotypeFilter ) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
 
-        List<String> sortedList = ParsingUtils.sortList(new ArrayList<String>(keys));
+        List<String> sortedList = ParsingUtils.sortList(new ArrayList<>(keys));
 
         // make sure the GT is first
         if (sawGoodGT) {
-            final List<String> newList = new ArrayList<String>(sortedList.size()+1);
+            final List<String> newList = new ArrayList<>(sortedList.size() + 1);
             newList.add(VCFConstants.GENOTYPE_KEY);
             newList.addAll(sortedList);
             sortedList = newList;
@@ -434,7 +434,7 @@ public class VariantContext implements Feature, Serializable {
                 Set<Allele> allelesFromGenotypes = allelesOfGenotypes(newGenotypes);
 
                 // ensure original order of genotypes
-                List<Allele> rederivedAlleles = new ArrayList<Allele>(allelesFromGenotypes.size());
+                List<Allele> rederivedAlleles = new ArrayList<>(allelesFromGenotypes.size());
                 for (Allele allele : alleles)
                     if (allelesFromGenotypes.contains(allele))
                         rederivedAlleles.add(allele);
@@ -469,7 +469,7 @@ public class VariantContext implements Feature, Serializable {
      * @return allele set
      */
     private final Set<Allele> allelesOfGenotypes(Collection<Genotype> genotypes) {
-        final Set<Allele> alleles = new HashSet<Allele>();
+        final Set<Allele> alleles = new HashSet<>();
 
         boolean addedref = false;
         for ( final Genotype g : genotypes ) {
@@ -863,7 +863,7 @@ public class VariantContext implements Feature, Serializable {
             return null;
         }
 
-        List<Integer> lengths = new ArrayList<Integer>();
+        List<Integer> lengths = new ArrayList<>();
         for ( Allele a : getAlternateAlleles() ) {
             lengths.add(a.length() - getReference().length());
         }
@@ -973,7 +973,7 @@ public class VariantContext implements Feature, Serializable {
      * @throws IllegalArgumentException if sampleName isn't bound to a genotype
      */
     protected GenotypesContext getGenotypes(Collection<String> sampleNames) {
-        return getGenotypes().subsetToSamples(new HashSet<String>(sampleNames));
+        return getGenotypes().subsetToSamples(new HashSet<>(sampleNames));
     }
 
     public GenotypesContext getGenotypes(Set<String> sampleNames) {
@@ -1049,7 +1049,7 @@ public class VariantContext implements Feature, Serializable {
      * @return chromosome count
      */
     public int getCalledChrCount(Allele a) {
-        return getCalledChrCount(a,new HashSet<String>(0));
+        return getCalledChrCount(a, new HashSet<>(0));
     }
 
     /**
@@ -1161,18 +1161,18 @@ public class VariantContext implements Feature, Serializable {
     /**
      * Run all extra-strict validation tests on a Variant Context object
      *
-     * @param reportedReference   the reported reference allele
-     * @param observedReference   the actual reference allele
+     * @param expectedReference   the expected reference allele
+     * @param actualReference     the actual reference allele
      * @param rsIDs               the true dbSNP IDs
      */
-    public void extraStrictValidation(final Allele reportedReference, final Allele observedReference, final Set<String> rsIDs) {
+    public void extraStrictValidation(final Allele expectedReference, final Allele actualReference, final Set<String> rsIDs) {
         // validate the reference
-        validateReferenceBases(reportedReference, observedReference);
+        validateReferenceBases(expectedReference, actualReference);
 
         // validate the RS IDs
         validateRSIDs(rsIDs);
 
-        // validate the altenate alleles
+        // validate the alternate alleles
         validateAlternateAlleles();
 
         // validate the AN and AC fields
@@ -1182,9 +1182,9 @@ public class VariantContext implements Feature, Serializable {
         //checkReferenceTrack();
     }
 
-    public void validateReferenceBases(final Allele reportedReference, final Allele observedReference) {
-        if ( reportedReference != null && !reportedReference.basesMatch(observedReference) ) {
-            throw new TribbleException.InternalCodecException(String.format("the REF allele is incorrect for the record at position %s:%d, fasta says %s vs. VCF says %s", getContig(), getStart(), observedReference.getBaseString(), reportedReference.getBaseString()));
+    public void validateReferenceBases(final Allele expectedReference, final Allele actualReference) {
+        if ( expectedReference != null && !expectedReference.basesMatch(actualReference) ) {
+            throw new TribbleException.InternalCodecException(String.format("the REF allele is incorrect for the record at position %s:%d, fasta says %s vs. VCF says %s", getContig(), getStart(), actualReference.getBaseString(), expectedReference.getBaseString()));
         }
     }
 
@@ -1201,94 +1201,90 @@ public class VariantContext implements Feature, Serializable {
         if ( !hasGenotypes() )
             return;
 
-        // maintain a list of non-symbolic alleles reported in the REF and ALT fields of the record
+        // maintain a list of non-symbolic alleles expected in the REF and ALT fields of the record
         // (we exclude symbolic alleles because it's commonly expected that they don't show up in the genotypes, e.g. with GATK gVCFs)
-        final List<Allele> reportedAlleles = new ArrayList<Allele>();
+        final List<Allele> expectedAlleles = new ArrayList<>();
         for ( final Allele allele : getAlleles() ) {
             if ( !allele.isSymbolic() )
-                reportedAlleles.add(allele);
+                expectedAlleles.add(allele);
         }
 
-        // maintain a list of non-symbolic alleles observed in the genotypes
-        final Set<Allele> observedAlleles = new HashSet<Allele>();
-        observedAlleles.add(getReference());
+        // maintain a list of non-symbolic alleles actual in the genotypes
+        final Set<Allele> actualAlleles = new HashSet<>();
+        actualAlleles.add(getReference());
         for ( final Genotype g : getGenotypes() ) {
             if ( g.isCalled() ) {
                 for ( final Allele allele : g.getAlleles() ) {
                     if ( !allele.isSymbolic() )
-                        observedAlleles.add(allele);
+                        actualAlleles.add(allele);
                 }
             }
         }
-        if ( observedAlleles.contains(Allele.NO_CALL) )
-            observedAlleles.remove(Allele.NO_CALL);
+        if ( actualAlleles.contains(Allele.NO_CALL) )
+            actualAlleles.remove(Allele.NO_CALL);
 
-        if ( reportedAlleles.size() != observedAlleles.size() )
-            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getContig(), getStart()));
+        if ( expectedAlleles.size() != actualAlleles.size() )
+            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not actual at all in the sample genotypes", getContig(), getStart()));
 
-        int originalSize = reportedAlleles.size();
+        int originalSize = expectedAlleles.size();
         // take the intersection and see if things change
-        observedAlleles.retainAll(reportedAlleles);
-        if ( observedAlleles.size() != originalSize )
-            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getContig(), getStart()));
+        actualAlleles.retainAll(expectedAlleles);
+        if ( actualAlleles.size() != originalSize )
+            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not actual at all in the sample genotypes", getContig(), getStart()));
     }
 
-    private void validateNumberOfItems(final String attributeKey, final int observedSize ) {
-        if ( hasAttribute(attributeKey) && observedSize > 0) {
+    private void validateAttributeIsExpectedSize(final String attributeKey, final int expectedSize ) {
+        if ( expectedSize > 0 && hasAttribute(attributeKey) ) {
             Object object = getAttribute(attributeKey);
-            int reportedSize = (object instanceof List ) ? ((List) object).size() : 1;
-            if (reportedSize != observedSize) {
-                throw new TribbleException.InternalCodecException(String.format("the %s tag has the incorrect number of records at position %s:%d, %d vs. %d", attributeKey, getContig(), getStart(), reportedSize, observedSize));
+            int actualSize = (object instanceof List ) ? ((List) object).size() : 1;
+            if (actualSize != expectedSize) {
+                throw new TribbleException.InternalCodecException(String.format("the %s tag has the incorrect number of records at position %s:%d, %d vs. %d", attributeKey, getContig(), getStart(), actualSize, expectedSize));
             }
         }
     }
 
     public void validateChromosomeCounts() {
         final int numberOfAlternateAlleles = alleles.size() - 1;
-        validateNumberOfItems(VCFConstants.ALLELE_COUNT_KEY, numberOfAlternateAlleles);
-        validateNumberOfItems(VCFConstants.ALLELE_FREQUENCY_KEY, numberOfAlternateAlleles);
+        validateAttributeIsExpectedSize(VCFConstants.ALLELE_COUNT_KEY, numberOfAlternateAlleles);
+        validateAttributeIsExpectedSize(VCFConstants.ALLELE_FREQUENCY_KEY, numberOfAlternateAlleles);
 
         if ( !hasGenotypes() )
             return;
 
         // AN
         if ( hasAttribute(VCFConstants.ALLELE_NUMBER_KEY) ) {
-            int reportedAN = Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
-            int observedAN = getCalledChrCount();
-            if ( reportedAN != observedAN )
-                throw new TribbleException.InternalCodecException(String.format("the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), reportedAN, observedAN));
+            int expectedAN = Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
+            int actualAN = getCalledChrCount();
+            if ( expectedAN != actualAN )
+                throw new TribbleException.InternalCodecException(String.format("the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAN, actualAN));
         }
 
         // AC
         if ( hasAttribute(VCFConstants.ALLELE_COUNT_KEY) ) {
-            ArrayList<Integer> observedACs = new ArrayList<>();
+            ArrayList<Integer> actualACs = new ArrayList<>();
 
             // if there are alternate alleles, record the relevant tags
-            if (!getAlternateAlleles().isEmpty()) {
+            if ( numberOfAlternateAlleles > 0 ) {
                 for ( Allele allele : getAlternateAlleles() ) {
-                    observedACs.add(getCalledChrCount(allele));
+                    actualACs.add(getCalledChrCount(allele));
                 }
             }
             else { // otherwise, set them to 0
-                observedACs.add(0);
+                actualACs.add(0);
             }
 
             if ( getAttribute(VCFConstants.ALLELE_COUNT_KEY) instanceof List ) {
-                final List reportedACs = (List)getAttribute(VCFConstants.ALLELE_COUNT_KEY);
-                if ( observedACs.size() != reportedACs.size() )
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag doesn't have the correct number of values for the record at position %s:%d, %d vs. %d", getContig(), getStart(), reportedACs.size(), observedACs.size()));
-                for (int i = 0; i < observedACs.size(); i++) {
+                final List expectedACs = (List)getAttribute(VCFConstants.ALLELE_COUNT_KEY);
+                for (int i = 0; i < actualACs.size(); i++) {
                     // need to cast to int to make sure we don't have an issue below with object equals (earlier bug) - EB
-                    final int reportedAC = Integer.valueOf(reportedACs.get(i).toString());
-                    if ( reportedAC != observedACs.get(i) )
-                        throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), reportedAC, observedACs.get(i)));
+                    final int expectedAC = Integer.valueOf(expectedACs.get(i).toString());
+                    if ( expectedAC != actualACs.get(i) )
+                        throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), expectedAC, actualACs.get(i)));
                 }
             } else {
-                if ( observedACs.size() != 1 )
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag doesn't have enough values for the record at position %s:%d", getContig(), getStart()));
-                int reportedAC = Integer.valueOf(getAttribute(VCFConstants.ALLELE_COUNT_KEY).toString());
-                if ( reportedAC != observedACs.get(0) )
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), reportedAC, observedACs.get(0)));
+                int expectedAC = Integer.valueOf(getAttribute(VCFConstants.ALLELE_COUNT_KEY).toString());
+                if ( expectedAC != actualACs.get(0) )
+                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAC, actualACs.get(0)));
             }
         }
     }
@@ -1487,7 +1483,7 @@ public class VariantContext implements Feature, Serializable {
 
     // protected basic manipulation routines
     private static List<Allele> makeAlleles(Collection<Allele> alleles) {
-        final List<Allele> alleleList = new ArrayList<Allele>(alleles.size());
+        final List<Allele> alleleList = new ArrayList<>(alleles.size());
 
         boolean sawRef = false;
         for ( final Allele a : alleles ) {
@@ -1558,7 +1554,7 @@ public class VariantContext implements Feature, Serializable {
     private final Map<String, Object> fullyDecodeAttributes(final Map<String, Object> attributes,
                                                             final VCFHeader header,
                                                             final boolean lenientDecoding) {
-        final Map<String, Object> newAttributes = new HashMap<String, Object>(10);
+        final Map<String, Object> newAttributes = new HashMap<>(10);
 
         for ( final Map.Entry<String, Object> attr : attributes.entrySet() ) {
             final String field = attr.getKey();
@@ -1596,7 +1592,7 @@ public class VariantContext implements Feature, Serializable {
             final String string = (String)value;
             if ( string.indexOf(',') != -1 ) {
                 final String[] splits = string.split(",");
-                final List<Object> values = new ArrayList<Object>(splits.length);
+                final List<Object> values = new ArrayList<>(splits.length);
                 for ( int i = 0; i < splits.length; i++ )
                     values.add(decodeOne(field, splits[i], format));
                 return values;
@@ -1605,7 +1601,7 @@ public class VariantContext implements Feature, Serializable {
             }
         } else if ( value instanceof List && (((List) value).get(0)) instanceof String ) {
             final List<String> asList = (List<String>)value;
-            final List<Object> values = new ArrayList<Object>(asList.size());
+            final List<Object> values = new ArrayList<>(asList.size());
             for ( final String s : asList )
                 values.add(decodeOne(field, s, format));
             return values;
