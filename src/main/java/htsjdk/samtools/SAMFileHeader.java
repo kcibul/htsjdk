@@ -27,16 +27,8 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.StringLineReader;
 
 import java.io.StringWriter;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Header information from a SAM or BAM file.
@@ -65,37 +57,30 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
      */
     public enum SortOrder {
 
-        unsorted(null),
-        queryname(SAMRecordQueryNameComparator.class),
-        coordinate(SAMRecordCoordinateComparator.class),
-        duplicate(SAMRecordDuplicateComparator.class); // NB: this is not in the SAM spec!
+        unsorted(() -> null),
+        queryname(SAMRecordQueryNameComparator::new),
+        coordinate(SAMRecordCoordinateComparator::new),
+        duplicate(SAMRecordDuplicateComparator::new); // NB: this is not in the SAM spec!
 
-        private final Class<? extends SAMRecordComparator> comparator;
+        private final Supplier<SAMRecordComparator> comparatorSupplier;
 
-        SortOrder(final Class<? extends SAMRecordComparator> comparatorClass) {
-            this.comparator = comparatorClass;
+        SortOrder(final Supplier<SAMRecordComparator> comparatorClass) {
+            this.comparatorSupplier = comparatorClass;
         }
 
         /**
          * @return Comparator class to sort in the specified order, or null if unsorted.
          */
         public Class<? extends SAMRecordComparator> getComparator() {
-            return comparator;
+            return comparatorSupplier.get().getClass();
         }
 
         /**
          * @return Comparator to sort in the specified order, or null if unsorted.
          */
         public SAMRecordComparator getComparatorInstance() {
-            if (comparator != null) {
-                try {
-                    final Constructor<? extends SAMRecordComparator> ctor = comparator.getConstructor();
-                    return ctor.newInstance();
-                }
-                catch (Exception e) {
-                    throw new IllegalStateException("Could not instantiate a comparator for sort order: " +
-                            this.name(), e);
-                }
+            if (comparatorSupplier != null) {
+                return comparatorSupplier.get();
             }
             return null;
         }

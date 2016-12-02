@@ -547,42 +547,25 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         }
 
         private final CloseableIterator<SAMRecord> wrappedIterator;
-        private SAMRecord previous = null;
-        private SAMRecordComparator comparator = null;
+        private SAMSortOrderChecker checker = null;
 
         public AssertingIterator(final CloseableIterator<SAMRecord> iterator) {
             wrappedIterator = iterator;
         }
 
         public SAMRecordIterator assertSorted(final SAMFileHeader.SortOrder sortOrder) {
-
-            if (sortOrder == null || sortOrder == SAMFileHeader.SortOrder.unsorted) {
-                comparator = null;
-                return this;
-            }
-
-            comparator = sortOrder.getComparatorInstance();
+            checker = new SAMSortOrderChecker(sortOrder);
             return this;
         }
 
         public SAMRecord next() {
+            final SAMRecord previous = checker.getPreviousRecord();
             final SAMRecord result = wrappedIterator.next();
-            if (comparator != null) {
-                if (previous != null) {
-                    if (comparator.fileOrderCompare(previous, result) > 0) {
-                        throw new IllegalStateException(MessageFormat.format(
-                                "Records {0} ({1}:{2}) should come after {3} ({4}:{5}) when sorting with {6}",
-                                previous.getReadName(),
-                                previous.getReferenceName(),
-                                previous.getAlignmentStart(),
-                                result.getReadName(),
-                                result.getReferenceName(),
-                                result.getAlignmentStart(),
-                                comparator.getClass().getName())
-                        );
-                    }
-                }
-                previous = result;
+            if (checker != null && !checker.isSorted(result)) {
+                throw new IllegalStateException(String.format(
+                                "Records %s should come after %s when sorting with %s",
+                                checker.getSortKey(previous),
+                                checker.getSortKey(result), checker.getSortOrder()));
             }
             return result;
         }
