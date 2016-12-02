@@ -559,13 +559,15 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         }
 
         public SAMRecord next() {
-            final SAMRecord previous = checker.getPreviousRecord();
             final SAMRecord result = wrappedIterator.next();
-            if (checker != null && !checker.isSorted(result)) {
-                throw new IllegalStateException(String.format(
-                                "Records %s should come after %s when sorting with %s",
-                                checker.getSortKey(previous),
-                                checker.getSortKey(result), checker.getSortOrder()));
+            if (checker != null) {
+                final SAMRecord previous = checker.getPreviousRecord();
+                if (!checker.isSorted(result)) {
+                    throw new IllegalStateException(String.format(
+                            "Records %s should come after %s when sorting with %s",
+                            checker.getSortKey(previous),
+                            checker.getSortKey(result), checker.getSortOrder()));
+                }
             }
             return result;
         }
