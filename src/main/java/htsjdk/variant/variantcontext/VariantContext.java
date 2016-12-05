@@ -1255,21 +1255,21 @@ public class VariantContext implements Feature, Serializable {
                     final double actualAF = (double) getCalledChrCount(allele) / actualAN;  // AF = AC/AN
                     final double expectedAF = Double.valueOf(expectedAFs.get(i++).toString());
                     if (Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON)
-                        throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAF, actualAF));
+                        throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %f vs. %f", getContig(), getStart(), expectedAF, actualAF));
                 }
             } else {
                 final double expectedAF = Double.valueOf(af.toString());
                 final Allele allele = getAlternateAlleles().get(0);
                 final double actualAF = (double) getCalledChrCount(allele) / actualAN;
                 if (Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON)
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAF, actualAF));
+                    throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %f vs. %f", getContig(), getStart(), expectedAF, actualAF));
             }
         }
         else { // otherwise, set them to 0
             final double expectedAF = Double.valueOf(af.toString());
             final double actualAF = 0.0;
             if ( Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON )
-                throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAF, actualAF));
+                throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %f vs. %f", getContig(), getStart(), expectedAF, actualAF));
         }
     }
 
@@ -1280,14 +1280,14 @@ public class VariantContext implements Feature, Serializable {
                 final double actualAF = (double) actualACs.get(i)/actualAN;
                 final double expectedAF = Double.valueOf(expectedAFs.get(i).toString());
                 if ( Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON )
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), expectedAF, actualAF));
+                    throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %f vs. %f", getContig(), getStart(), expectedAF, actualAF));
             }
         }
         else {
             final double expectedAF = Double.valueOf(af.toString());
             final double actualAF = (double) actualACs.get(0)/actualAN;
             if ( Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON )
-                throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAF, actualAF));
+                throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %f vs. %f", getContig(), getStart(), expectedAF, actualAF));
         }
     }
 
