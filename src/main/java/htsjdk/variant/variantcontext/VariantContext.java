@@ -25,7 +25,6 @@
 
 package htsjdk.variant.variantcontext;
 
-import htsjdk.samtools.util.Tuple;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -1235,11 +1234,60 @@ public class VariantContext implements Feature, Serializable {
 
     private void validateAttributeIsExpectedSize(final String attributeKey, final int expectedSize ) {
         if ( expectedSize > 0 && hasAttribute(attributeKey) ) {
-            Object object = getAttribute(attributeKey);
-            int actualSize = (object instanceof List ) ? ((List) object).size() : 1;
+            final Object object = getAttribute(attributeKey);
+            if ( object.getClass().isArray() ) {
+                throw new TribbleException.InternalCodecException(String.format("the %s tag vallues cannot be an array at position %s:%d,", attributeKey, getContig(), getStart()));
+            }
+            final int actualSize = (object instanceof List ) ? ((List) object).size() : 1;
             if (actualSize != expectedSize) {
                 throw new TribbleException.InternalCodecException(String.format("the %s tag has the incorrect number of records at position %s:%d, %d vs. %d", attributeKey, getContig(), getStart(), actualSize, expectedSize));
             }
+        }
+    }
+
+    private void validateAFComputeAC(final Object af, int actualAN, final int numberOfAlternateAlleles) {
+        // if there are alternate alleles, record the relevant tags
+        if ( numberOfAlternateAlleles > 0 ) {
+            if ( af instanceof List ) {
+                final List expectedAFs = (List) af;
+                int i = 0;
+                for (final Allele allele : getAlternateAlleles()) {
+                    final double actualAF = (double) getCalledChrCount(allele) / actualAN;  // AF = AC/AN
+                    final double expectedAF = Double.valueOf(expectedAFs.get(i++).toString());
+                    if (Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON)
+                        throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAF, actualAF));
+                }
+            } else {
+                final double expectedAF = Double.valueOf(af.toString());
+                final Allele allele = getAlternateAlleles().get(0);
+                final double actualAF = (double) getCalledChrCount(allele) / actualAN;
+                if (Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON)
+                    throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAF, actualAF));
+            }
+        }
+        else { // otherwise, set them to 0
+            final double expectedAF = Double.valueOf(af.toString());
+            final double actualAF = 0.0;
+            if ( Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON )
+                throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAF, actualAF));
+        }
+    }
+
+    private void validateAFWithAC(final Object af, final int actualAN, final ArrayList<Integer> actualACs) {
+        if ( af instanceof List ) {
+            final List expectedAFs = (List) af;
+            for (int i = 0; i < actualACs.size(); i++) {
+                final double actualAF = (double) actualACs.get(i)/actualAN;
+                final double expectedAF = Double.valueOf(expectedAFs.get(i).toString());
+                if ( Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON )
+                    throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), expectedAF, actualAF));
+            }
+        }
+        else {
+            final double expectedAF = Double.valueOf(af.toString());
+            final double actualAF = (double) actualACs.get(0)/actualAN;
+            if ( Math.abs(actualAF - expectedAF) > VCFConstants.VCF_ENCODING_EPSILON )
+                throw new TribbleException.InternalCodecException(String.format("the Allele Frequency (AF) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAF, actualAF));
         }
     }
 
@@ -1252,20 +1300,21 @@ public class VariantContext implements Feature, Serializable {
             return;
 
         // AN
+        int actualAN = 0;
         if ( hasAttribute(VCFConstants.ALLELE_NUMBER_KEY) ) {
-            int expectedAN = Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
-            int actualAN = getCalledChrCount();
+            final int expectedAN = Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
+            actualAN = getCalledChrCount();
             if ( expectedAN != actualAN )
                 throw new TribbleException.InternalCodecException(String.format("the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAN, actualAN));
         }
 
         // AC
+        final ArrayList<Integer> actualACs = new ArrayList<>(numberOfAlternateAlleles);
         if ( hasAttribute(VCFConstants.ALLELE_COUNT_KEY) ) {
-            ArrayList<Integer> actualACs = new ArrayList<>();
 
             // if there are alternate alleles, record the relevant tags
             if ( numberOfAlternateAlleles > 0 ) {
-                for ( Allele allele : getAlternateAlleles() ) {
+                for ( final Allele allele : getAlternateAlleles() ) {
                     actualACs.add(getCalledChrCount(allele));
                 }
             }
@@ -1273,8 +1322,9 @@ public class VariantContext implements Feature, Serializable {
                 actualACs.add(0);
             }
 
-            if ( getAttribute(VCFConstants.ALLELE_COUNT_KEY) instanceof List ) {
-                final List expectedACs = (List)getAttribute(VCFConstants.ALLELE_COUNT_KEY);
+            final Object ac = getAttribute(VCFConstants.ALLELE_COUNT_KEY);
+            if ( ac instanceof List ) {
+                final List expectedACs = (List) ac;
                 for (int i = 0; i < actualACs.size(); i++) {
                     // need to cast to int to make sure we don't have an issue below with object equals (earlier bug) - EB
                     final int expectedAC = Integer.valueOf(expectedACs.get(i).toString());
@@ -1282,9 +1332,26 @@ public class VariantContext implements Feature, Serializable {
                         throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), expectedAC, actualACs.get(i)));
                 }
             } else {
-                int expectedAC = Integer.valueOf(getAttribute(VCFConstants.ALLELE_COUNT_KEY).toString());
+                final int expectedAC = Integer.valueOf(ac.toString());
                 if ( expectedAC != actualACs.get(0) )
                     throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), expectedAC, actualACs.get(0)));
+            }
+        }
+
+        // AF
+        if ( hasAttribute(VCFConstants.ALLELE_FREQUENCY_KEY) ) {
+            final Object af = getAttribute(VCFConstants.ALLELE_FREQUENCY_KEY);
+
+            if ( actualAN != 0 && !actualACs.isEmpty() ) {  // have AN and AC
+                validateAFWithAC(af, actualAN, actualACs);
+            } else if (actualAN == 0 && !actualACs.isEmpty()) {  // have AC but not AN
+                actualAN = getCalledChrCount();
+                validateAFWithAC(af, actualAN, actualACs);
+            } else if ( actualAN != 0 && actualACs.isEmpty() ) { // have AN but not AC
+                validateAFComputeAC(af, actualAN, numberOfAlternateAlleles);
+            } else {  // missing AN and AC
+                actualAN = getCalledChrCount();
+                validateAFComputeAC(af, actualAN, numberOfAlternateAlleles);
             }
         }
     }
